@@ -5,6 +5,9 @@
   const detailPesanan = [
       "Jenis Kendaraan", "Diterbitkan oleh Pengemudi", "Diterbitkan untuk", "Pesanan ID", "Pesanan Dari", "Lokasi Pengantaran", "Profil"
   ]
+  const exclude = [
+    "Help Centre", "Selamat menikmati makanan Anda", "Detail Pembayaran:   Jumlah:"
+  ]
   let res;
   let resArray;
   let listArrObj;
@@ -101,6 +104,7 @@
   
           arrDetailPesanan.split("\\n").map((e) => {
               let key, value;
+              if(exclude.some(substr=>e.includes(substr)))return false;
               e.split(";").map((x, idx) => {
                   let val = x.trim();
                   if (idx == 0) key = val
@@ -120,24 +124,25 @@
             return item.indexOf("Subtotal")!==-1;
         }));
 
-          arrDetailTagihan.split("\\n").map((e) => {
+          arrDetailTagihan.split("\\n").map((e, idxA) => {
               let obj, key, value, qty, notes, isListItem = false;
+              if(idxA <= posST){
+                isListItem = true;
+              }
+              if(exclude.some(substr=>e.includes(substr)))return false;
               e.split(";").map((x, idx) => {
-                if(idx <= posST){
-                  isListItem = true;
-                }
                 let val = x.trim();
                 if(!isListItem){
                   
                   if (idx == 0) key = val
                   if (idx == 1) {
                       if (val.charAt(0) == ":") val = val.slice(1);
-                      value = val
+                      value = validateAmt(val)
                   }
                 }else{
                   if (idx == 0) qty = val
                   if (idx == 1) key = val
-                  if (idx == 2) value = val
+                  if (idx == 2) value = validateAmt(val)
                   if (idx == 3) notes = val
                 }
 
@@ -168,6 +173,14 @@
       });
   }, 5000);
   // })();
+
+  function validateAmt(val){
+    if(val.indexOf("Rp") == -1) return val;
+                        let isNegativ = val.indexOf("-") !== -1;
+                        let number = parseInt(val.match(/\d+/g));
+                        if(isNegativ)number = number * -1;
+                        return number;
+  }
 
   function getData() {
       return fetch('assets/receipt.eml')
